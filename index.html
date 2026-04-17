@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Replacement Algorithm Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-simulate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-simulate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-clear {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-clear:hover {
+            background: #d0d0d0;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .algorithm-result {
+            margin-bottom: 40px;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fafafa;
+        }
+
+        .algorithm-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .algorithm-header.fifo {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .algorithm-header.lru {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .algorithm-header.optimal {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .algorithm-content {
+            padding: 25px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .steps-container {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+        }
+
+        .step {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-size: 0.95em;
+            font-family: 'Courier New', monospace;
+            border-left: 3px solid transparent;
+        }
+
+        .step.hit {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+            color: #2e7d32;
+        }
+
+        .step.fault {
+            background: #ffebee;
+            border-left-color: #f44336;
+            color: #c62828;
+        }
+
+        .step.frames {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+            font-weight: 600;
+            color: #1565c0;
+        }
+
+        .comparison-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            border-top: 3px solid #667eea;
+            margin-top: 40px;
+        }
+
+        .comparison-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .comparison-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .best-algorithm {
+            background: #c8e6c9;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+            font-weight: 600;
+            color: #2e7d32;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #f44336;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .example-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-example {
+            padding: 10px 15px;
+            background: #e0e0e0;
+            border: 2px solid #999;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-example:hover {
+            background: #d0d0d0;
+            border-color: #667eea;
+        }
+
+        .scrollable {
+            overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Page Replacement Algorithm Simulator</h1>
+            <p>Compare FIFO, LRU, and Optimal Page Replacement Algorithms</p>
+        </div>
+
+        <div class="content">
+            <!-- Input Section -->
+            <div class="input-section">
+                <h2 style="margin-bottom: 20px; color: #333;">Input Parameters</h2>
+                
+                <div class="form-group">
+                    <label for="pageReferences">Page Reference String (comma-separated):</label>
+                    <input type="text" id="pageReferences" placeholder="e.g., 7,0,1,2,0,3,0,4,2,3,0,3,2" value="7,0,1,2,0,3,0,4,2,3,0,3,2">
+                </div>
+
+                <div class="form-group">
+                    <label for="numFrames">Number of Frames (Memory Slots):</label>
+                    <input type="number" id="numFrames" min="1" max="20" value="3">
+                </div>
+
+                <div class="example-buttons">
+                    <button class="btn-example" onclick="loadExample1()">Example 1 (3 frames)</button>
+                    <button class="btn-example" onclick="loadExample2()">Example 2 (4 frames)</button>
+                    <button class="btn-example" onclick="loadExample3()">Example 3 (2 frames)</button>
+                    <button class="btn-example" onclick="loadExample4()">Example 4 (Sequential)</button>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-simulate" onclick="simulate()">▶ Simulate All Algorithms</button>
+                    <button class="btn-clear" onclick="clearResults()">🗑 Clear Results</button>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error" id="errorMessage"></div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <div id="algorithmsContainer"></div>
+
+                <!-- Comparison Section -->
+                <div class="comparison-section">
+                    <h2>📊 Algorithm Comparison</h2>
+                    <div class="scrollable">
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Algorithm</th>
+                                    <th>Page Faults</th>
+                                    <th>Hit Rate</th>
+                                    <th>Fault Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparisonTable">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="best-algorithm" id="bestAlgorithm"></div>
+
+                    <div class="charts-row">
+                        <div class="chart-container">
+                            <h3 style="margin-bottom: 15px; color: #333;">Page Faults by Algorithm</h3>
+                            <canvas id="faultsChart" width="300" height="200"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3 style="margin-bottom: 15px; color: #333;">Hit Rate Comparison</h3>
+                            <canvas id="hitRateChart" width="300" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class PageReplacementSimulator {
+            constructor(pageReferences, numFrames) {
+                this.pageReferences = pageReferences;
+                this.numFrames = numFrames;
+            }
+
+            fifo() {
+                const frames = [];
+                let pageFaults = 0;
+                const steps = [];
+
+                for (let step = 0; step < this.pageReferences.length; step++) {
+                    const page = this.pageReferences[step];
+                    
+                    if (frames.includes(page)) {
+                        steps.push({
+                            type: 'hit',
+                            text: `Step ${step + 1}: Page ${page} - HIT (Page already in memory)`
+                        });
+                    } else {
+                        pageFaults++;
+                        
+                        if (frames.length === this.numFrames) {
+                            const removed = frames.shift();
+                            steps.push({
+                                type: 'fault',
+                                text: `Step ${step + 1}: Page ${page} - FAULT (Replaced page ${removed})`
+                            });
+                        } else {
+                            steps.push({
+                                type: 'fault',
+                                text: `Step ${step + 1}: Page ${page} - FAULT (Frame added)`
+                            });
+                        }
+                        
+                        frames.push(page);
+                    }
+                    
+                    steps.push({
+                        type: 'frames',
+                        text: `  Frames: [${frames.join(', ')}]`
+                    });
+                }
+
+                return { pageFaults, steps };
+            }
+
+            lru() {
+                const frames = {};
+                let pageFaults = 0;
+                const steps = [];
+
+                for (let step = 0; step < this.pageReferences.length; step++) {
+                    const page = this.pageReferences[step];
+                    
+                    if (page in frames) {
+                        frames[page] = step;
+                        steps.push({
+                            type: 'hit',
+                            text: `Step ${step + 1}: Page ${page} - HIT (Page already in memory)`
+                        });
+                    } else {
+                        pageFaults++;
+                        
+                        if (Object.keys(frames).length === this.numFrames) {
+                            const lruPage = Object.keys(frames).reduce((a, b) => 
+                                frames[a] < frames[b] ? a : b
+                            );
+                            delete frames[lruPage];
+                            steps.push({
+                                type: 'fault',
+                                text: `Step ${step + 1}: Page ${page} - FAULT (Replaced LRU page ${lruPage})`
+                            });
+                        } else {
+                            steps.push({
+                                type: 'fault',
+                                text: `Step ${step + 1}: Page ${page} - FAULT (Frame added)`
+                            });
+                        }
+                        
+                        frames[page] = step;
+                    }
+                    
+                    steps.push({
+                        type: 'frames',
+                        text: `  Frames: [${Object.keys(frames).join(', ')}]`
+                    });
+                }
+
+                return { pageFaults, steps };
+            }
+
+            optimal() {
+                const frames = new Set();
+                let pageFaults = 0;
+                const steps = [];
+
+                // Precompute next occurrences
+                const nextOccurrence = {};
+                for (let i = this.pageReferences.length - 1; i >= 0; i--) {
+                    const page = this.pageReferences[i];
+                    if (!(page in nextOccurrence)) {
+                        nextOccurrence[page] = [];
+                    }
+                    nextOccurrence[page].unshift(i);
+                }
+
+                for (let step = 0; step < this.pageReferences.length; step++) {
+                    const page = this.pageReferences[step];
+                    
+                    if (frames.has(page)) {
+                        steps.push({
+                            type: 'hit',
+                            text: `Step ${step + 1}: Page ${page} - HIT (Page already in memory)`
+                        });
+                    } else {
+                        pageFaults++;
+                        
+                        if (frames.size === this.numFrames) {
+                            let furthestPage = null;
+                            let furthestTime = -1;
+
+                            for (let framePage of frames) {
+                                const nextIndices = nextOccurrence[framePage];
+                                let nextUseIndex = nextIndices.length;
+                                
+                                for (let idx of nextIndices) {
+                                    if (idx > step) {
+                                        nextUseIndex = idx;
+                                        break;
+                                    }
+                                }
+
+                                if (nextUseIndex > furthestTime) {
+                                    furthestPage = framePage;
+                                    furthestTime = nextUseIndex;
+                                }
+                            }
+
+                            frames.delete(furthestPage);
+                            steps.push({
+                                type: 'fault',
+                                text: `Step ${step + 1}: Page ${page} - FAULT (Replaced page ${furthestPage})`
+                            });
+                        } else {
+                            steps.push({
+                                type: 'fault',
+                                text: `Step ${step + 1}: Page ${page} - FAULT (Frame added)`
+                            });
+                        }
+                        
+                        frames.add(page);
+                    }
+                    
+                    steps.push({
+                        type: 'frames',
+                        text: `  Frames: [${Array.from(frames).sort((a, b) => a - b).join(', ')}]`
+                    });
+                }
+
+                return { pageFaults, steps };
+            }
+        }
+
+        function parseInput() {
+            const pageReferencesInput = document.getElementById('pageReferences').value.trim();
+            const numFramesInput = document.getElementById('numFrames').value.trim();
+
+            if (!pageReferencesInput || !numFramesInput) {
+                showError('Please fill in all fields.');
+                return null;
+            }
+
+            try {
+                const pageReferences = pageReferencesInput.split(',').map(x => {
+                    const num = parseInt(x.trim());
+                    if (isNaN(num)) throw new Error('Invalid page reference');
+                    return num;
+                });
+
+                const numFrames = parseInt(numFramesInput);
+                if (isNaN(numFrames) || numFrames <= 0) {
+                    throw new Error('Number of frames must be a positive integer');
+                }
+
+                if (pageReferences.length === 0) {
+                    throw new Error('Please enter at least one page reference');
+                }
+
+                return { pageReferences, numFrames };
+            } catch (error) {
+                showError('Invalid input: ' + error.message);
+                return null;
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = '⚠️ ' + message;
+            errorDiv.classList.add('show');
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        function simulate() {
+            const input = parseInput();
+            if (!input) return;
+
+            const { pageReferences, numFrames } = input;
+            const simulator = new PageReplacementSimulator(pageReferences, numFrames);
+
+            const fifoResult = simulator.fifo();
+            const lruResult = simulator.lru();
+            const optimalResult = simulator.optimal();
+
+            displayResults(pageReferences, numFrames, fifoResult, lruResult, optimalResult);
+        }
+
+        function displayResults(pageReferences, numFrames, fifoResult, lruResult, optimalResult) {
+            const resultsContainer = document.getElementById('algorithmsContainer');
+            resultsContainer.innerHTML = '';
+
+            // Display each algorithm
+            resultsContainer.appendChild(createAlgorithmResult('FIFO', 'fifo', pageReferences, numFrames, fifoResult));
+            resultsContainer.appendChild(createAlgorithmResult('LRU', 'lru', pageReferences, numFrames, lruResult));
+            resultsContainer.appendChild(createAlgorithmResult('Optimal', 'optimal', pageReferences, numFrames, optimalResult));
+
+            // Display comparison
+            displayComparison(fifoResult.pageFaults, lruResult.pageFaults, optimalResult.pageFaults, pageReferences.length);
+
+            document.getElementById('resultsSection').classList.add('show');
+        }
+
+        function createAlgorithmResult(name, className, pageReferences, numFrames, result) {
+            const div = document.createElement('div');
+            div.className = 'algorithm-result';
+
+            const hitRate = ((pageReferences.length - result.pageFaults) / pageReferences.length * 100).toFixed(2);
+            const faultRate = (result.pageFaults / pageReferences.length * 100).toFixed(2);
+
+            div.innerHTML = `
+                <div class="algorithm-header ${className}">${name} Algorithm</div>
+                <div class="algorithm-content">
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <div class="stat-label">Page References</div>
+                            <div class="stat-value">${pageReferences.length}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Number of Frames</div>
+                            <div class="stat-value">${numFrames}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Page Faults</div>
+                            <div class="stat-value">${result.pageFaults}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Hit Rate</div>
+                            <div class="stat-value">${hitRate}%</div>
+                        </div>
+                    </div>
+                    <h3 style="margin-bottom: 15px; color: #333;">Step-by-Step Execution:</h3>
+                    <div class="steps-container">
+                        ${result.steps.map(step => `
+                            <div class="step ${step.type}">${step.text}</div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            return div;
+        }
+
+        function displayComparison(fifoFaults, lruFaults, optimalFaults, totalPages) {
+            const tbody = document.getElementById('comparisonTable');
+            tbody.innerHTML = '';
+
+            const algorithms = [
+                { name: 'FIFO', faults: fifoFaults },
+                { name: 'LRU', faults: lruFaults },
+                { name: 'Optimal', faults: optimalFaults }
+            ];
+
+            algorithms.forEach(algo => {
+                const hitRate = ((totalPages - algo.faults) / totalPages * 100).toFixed(2);
+                const faultRate = (algo.faults / totalPages * 100).toFixed(2);
+                
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td><strong>${algo.name}</strong></td>
+                    <td>${algo.faults}</td>
+                    <td>${hitRate}%</td>
+                    <td>${faultRate}%</td>
+                `;
+            });
+
+            // Best algorithm
+            const bestAlgo = algorithms.reduce((prev, current) => 
+                prev.faults < current.faults ? prev : current
+            );
+
+            document.getElementById('bestAlgorithm').innerHTML = 
+                `✅ Best Algorithm: <strong>${bestAlgo.name}</strong> with ${bestAlgo.faults} page faults`;
+
+            // Draw charts
+            drawCharts(algorithms, totalPages);
+        }
+
+        function drawCharts(algorithms, totalPages) {
+            // Faults Chart
+            const faultsCanvas = document.getElementById('faultsChart');
+            const faultsCtx = faultsCanvas.getContext('2d');
+            drawBarChart(faultsCtx, algorithms.map(a => a.name), algorithms.map(a => a.faults), 
+                         ['#667eea', '#f093fb', '#4facfe'], 'Page Faults');
+
+            // Hit Rate Chart
+            const hitRateCanvas = document.getElementById('hitRateChart');
+            const hitRateCtx = hitRateCanvas.getContext('2d');
+            const hitRates = algorithms.map(a => ((totalPages - a.faults) / totalPages * 100).toFixed(2));
+            drawBarChart(hitRateCtx, algorithms.map(a => a.name), hitRates, 
+                         ['#667eea', '#f093fb', '#4facfe'], 'Hit Rate (%)');
+        }
+
+        function drawBarChart(ctx, labels, data, colors, title) {
+            const padding = 40;
+            const chartWidth = ctx.canvas.width - 2 * padding;
+            const chartHeight = ctx.canvas.height - 2 * padding;
+            const barWidth = chartWidth / (labels.length * 1.5);
+            const maxValue = Math.max(...data);
+
+            // Clear canvas
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            // Draw title
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#333';
+            ctx.fillText(title, ctx.canvas.width / 2, 20);
+
+            // Draw bars
+            ctx.font = '12px Arial';
+            data.forEach((value, index) => {
+                const x = padding + (index * (barWidth + 20));
+                const barHeight = (value / maxValue) * chartHeight;
+                const y = ctx.canvas.height - padding;
+
+                // Draw bar
+                ctx.fillStyle = colors[index];
+                ctx.fillRect(x, y - barHeight, barWidth, barHeight);
+
+                // Draw value
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'center';
+                ctx.fillText(value, x + barWidth / 2, y + 20);
+
+                // Draw label
+                ctx.fillText(labels[index], x + barWidth / 2, y + 35);
+            });
+        }
+
+        function clearResults() {
+            document.getElementById('resultsSection').classList.remove('show');
+            document.getElementById('pageReferences').value = '7,0,1,2,0,3,0,4,2,3,0,3,2';
+            document.getElementById('numFrames').value = '3';
+        }
+
+        // Example cases
+        function loadExample1() {
+            document.getElementById('pageReferences').value = '7,0,1,2,0,3,0,4,2,3,0,3,2';
+            document.getElementById('numFrames').value = '3';
+            simulate();
+        }
+
+        function loadExample2() {
+            document.getElementById('pageReferences').value = '1,2,3,4,1,2,5,1,2,3,4,5';
+            document.getElementById('numFrames').value = '4';
+            simulate();
+        }
+
+        function loadExample3() {
+            document.getElementById('pageReferences').value = '1,2,3,1,2,3,4,1,2,3,4,5';
+            document.getElementById('numFrames').value = '2';
+            simulate();
+        }
+
+        function loadExample4() {
+            document.getElementById('pageReferences').value = '1,2,3,1,2,3,1,2,3';
+            document.getElementById('numFrames').value = '3';
+            simulate();
+        }
+    </script>
+</body>
+</html>
